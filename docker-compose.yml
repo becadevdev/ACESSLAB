@@ -1,0 +1,49 @@
+services:
+  db:
+    image: mariadb:11
+    container_name: acesslab-db
+    restart: always
+    environment:
+      MARIADB_ROOT_PASSWORD: root123
+      MARIADB_DATABASE: accesslab
+      MARIADB_USER: peca
+      MARIADB_PASSWORD: peca123
+    volumes:
+      - db_data:/var/lib/mysql
+      - ./ACESSLAB.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    networks:
+      - acesslab-network
+
+  api:
+    build:
+      context: ./acesslab
+    container_name: acesslab-api
+    restart: always
+    depends_on:
+      - db
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mariadb://db:3306/accesslab
+      SPRING_DATASOURCE_USERNAME: peca
+      SPRING_DATASOURCE_PASSWORD: peca123
+    networks:
+      - acesslab-network
+
+  nginx:
+    image: nginx:alpine
+    container_name: acesslab-nginx
+    restart: always
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/accesslab.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - api
+    networks:
+      - acesslab-network
+
+volumes:
+  db_data:
+
+networks:
+  acesslab-network:
+    driver: bridge
